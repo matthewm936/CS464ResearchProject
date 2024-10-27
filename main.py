@@ -7,7 +7,7 @@ import time
 # Global variables
 NUM_TRIALS = 10
 MAX_KEY_COMBO = 3  # Maximum number of keys in a combination
-KEY_RESET_DELAY = 500  # Buffer time between trials in milliseconds
+KEY_RESET_DELAY = 400  # Buffer time between trials in milliseconds
 
 # Read in arguments from the command line
 if len(sys.argv) < 3:
@@ -20,6 +20,7 @@ trial_number = sys.argv[2]
 # Open CSV file in append mode
 with open('data.csv', 'a', newline='') as csvfile:
 	writer = csv.writer(csvfile)
+	writer.writerow(['Participant ID', 'Trial #', 'Avg Time (s)', 'Correctness Rate', 'Key Count'])
 
 	# Track overall stats
 	correct_responses = 0
@@ -28,7 +29,7 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 	# Track stats for individual key counts
 	key_stats = {i: {'correct': 0, 'total_time': 0, 'trials': 0} for i in range(1, MAX_KEY_COMBO + 1)}
-	
+
 	pressed_keys = set()  # Track keys currently pressed
 	target_keys = []
 
@@ -49,10 +50,12 @@ with open('data.csv', 'a', newline='') as csvfile:
 		if num_keys == 1:
 			target_keys.append(random.choice("abcdefghijklmnopqrstuvwxyz"))
 		else:
-			# Add modifier keys and alphabet combinations for 2+ key prompts
+			# Add modifier keys and ensure unique keys for 2+ key prompts
 			modifiers = ['Shift', 'Control']
-			target_keys = [random.choice(modifiers)] + \
-						[random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(num_keys - 1)]
+			selected_keys = set(random.sample(modifiers, 1))  # Start with one modifier key
+			selected_keys.update(random.sample("abcdefghijklmnopqrstuvwxyz", num_keys - 1))  # Add unique keys
+			
+			target_keys = list(selected_keys)
 
 		start_time = time.time()  # Start timer
 
@@ -137,3 +140,6 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 	# Run the GUI
 	root.mainloop()
+
+
+#TODO: make sure the correct % accounts for if you hit ctrl or i first it doenst matter so example if prompted ctrl i and the user hits i or ctrl first it accounts both
