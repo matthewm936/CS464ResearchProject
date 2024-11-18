@@ -5,8 +5,8 @@ import random
 import time
 
 # Global variables
-NUM_TRIALS = 10
-MAX_KEY_COMBO = 3  # Maximum number of keys in a combination
+NUM_TRIALS = 8
+MAX_KEY_COMBO = 4  # Maximum number of keys in a combination
 KEY_RESET_DELAY = 400  # Buffer time between trials in milliseconds
 
 # Read in arguments from the command line
@@ -64,9 +64,32 @@ with open('data.csv', 'a', newline='') as csvfile:
 		prompt_label.config(text=f"Press the keys: {keys_text}")
 		prompt_label.pack()
 
+	def normalize_key(key):
+		"""Normalize keys to handle left/right variants and shift behavior."""
+		if key in ['Shift_L', 'Shift_R']:
+			return 'Shift'
+		elif key in ['Control_L', 'Control_R']:
+			return 'Control'
+		elif key in ['Alt_L', 'Alt_R']:
+			return 'Alt'
+		elif len(key) == 1 and key.isalpha():  # For letters, normalize to lowercase
+			return key.lower()
+		return key
+
 	def on_key_press(event):
 		# Track the currently pressed keys
-		pressed_keys.add(event.keysym)
+		normalized_key = normalize_key(event.keysym)
+		if normalized_key == 'Shift':
+			pressed_keys.add('Shift')  # Explicitly add Shift
+		else:
+			# Normalize letters to lowercase if Shift is pressed
+			if 'Shift' in pressed_keys:
+				normalized_key = normalized_key.lower()
+			pressed_keys.add(normalized_key)
+
+		# Print the keys pressed and the expected keys
+		print(f"Keys pressed by user: {pressed_keys}")
+		print(f"Keys expected by program: {set(target_keys)}")
 
 		# Check if the number of pressed keys matches the target
 		if len(pressed_keys) == len(target_keys):
@@ -75,14 +98,22 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 	def on_key_release(event):
 		# Remove released key from the set
-		pressed_keys.discard(event.keysym)
+		normalized_key = normalize_key(event.keysym)
+		pressed_keys.discard(normalized_key)
+
 
 	def log_response(pressed, response_time):
 		global correct_responses, total_time, trials_completed
 
 		num_keys = len(target_keys)
-		correct_count = sum(1 for key in pressed if key in target_keys)
-		correctness_rate = correct_count / num_keys  # Calculate correctness percentage
+		
+		# Calculate correctness by ensuring both sets have the same keys (order doesn't matter)
+		correct_count = 1 if set(pressed) == set(target_keys) else 0
+		correctness_rate = correct_count  # 1 if all keys match, 0 otherwise
+
+		# Print result of comparison
+		print(f"Correctness: {'Correct' if correct_count == 1 else 'Incorrect'}")
+		print(f"Response time: {response_time:.2f} seconds")
 
 		# Update stats for the current key count
 		key_stats[num_keys]['correct'] += correctness_rate
@@ -107,8 +138,10 @@ with open('data.csv', 'a', newline='') as csvfile:
 	def report_results():
 		# Report overall results
 		avg_time_overall = total_time / NUM_TRIALS
-		accuracy_overall = correct_responses / (trials_completed * len(target_keys))  # Overall accuracy based on total key presses
-		writer.writerow([participant_id, trial_number, avg_time_overall, accuracy_overall, 'Overall'])
+
+		# counts any miss as a combo miss
+		combo_accuracy = correct_responses / (trials_completed)  # Overall accuracy based on total key presses
+		writer.writerow([participant_id, trial_number, avg_time_overall, combo_accuracy, 'Overall'])
 
 		# Report individual key count results
 		for num_keys in range(1, MAX_KEY_COMBO + 1):
