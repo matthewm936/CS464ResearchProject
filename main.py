@@ -5,17 +5,23 @@ import random
 import time
 
 # Global variables
-NUM_TRIALS = 8
-MAX_KEY_COMBO = 4  # Maximum number of keys in a combination
+NUM_TRIALS = 50
+MAX_KEY_COMBO = 8  # Maximum number of keys in a combination
 KEY_RESET_DELAY = 400  # Buffer time between trials in milliseconds
 
 # Read in arguments from the command line
 if len(sys.argv) < 3:
-	print("Usage: python script.py <participant_id> <trial_number>")
+	print("Usage: python script.py <participant_id> <trial_number> [<seed>]")
 	sys.exit(1)
 
 participant_id = sys.argv[1]
 trial_number = sys.argv[2]
+
+# Optional seed for reproducibility
+seed = None
+if len(sys.argv) == 4:
+	seed = int(sys.argv[3])
+	random.seed(seed)
 
 # Open CSV file in append mode
 with open('data.csv', 'a', newline='') as csvfile:
@@ -173,6 +179,3 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 	# Run the GUI
 	root.mainloop()
-
-
-#TODO: make sure the correct % accounts for if you hit ctrl or i first it doenst matter so example if prompted ctrl i and the user hits i or ctrl first it accounts both
