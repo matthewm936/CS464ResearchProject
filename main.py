@@ -8,7 +8,7 @@ NUM_TRIALS = 20
 MAX_KEY_COMBO = 5
 
 # Buffer time between key entries in milliseconds
-KEY_RESET_DELAY = 350
+KEY_RESET_DELAY = 500
 
 if len(sys.argv) < 3:
 	print("Usage: python main.py <participant_id> <trial_number> [<seed>]")
