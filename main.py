@@ -4,11 +4,11 @@ import tkinter as tk
 import random
 import time
 
-NUM_TRIALS = 40
-MAX_KEY_COMBO = 8
+NUM_TRIALS = 25
+MAX_KEY_COMBO = 5
 
 # Buffer time between trials in milliseconds
-KEY_RESET_DELAY = 400
+KEY_RESET_DELAY = 500
 
 if len(sys.argv) < 3:
 	print("Usage: python main.py <participant_id> <trial_number> [<seed>]")
@@ -26,7 +26,7 @@ if len(sys.argv) == 4:
 
 with open('data.csv', 'a', newline='') as csvfile:
 	writer = csv.writer(csvfile)
-	writer.writerow(['Participant ID', 'Trial #', 'Avg Time (s)', 'Correctness Rate', 'Key Count'])
+	writer.writerow(['Participant ID', 'Trial #', 'Avg Time (s)', 'Correctness Rate', 'Num of Keys In Hotkey Combination'])
 
 	correct_responses = 0
 	total_time = 0
