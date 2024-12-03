@@ -4,11 +4,11 @@ import tkinter as tk
 import random
 import time
 
-NUM_TRIALS = 25
-MAX_KEY_COMBO = 5
+NUM_TRIALS = 20
+MAX_KEY_COMBO = 4
 
 # Buffer time between trials in milliseconds
-KEY_RESET_DELAY = 500
+KEY_RESET_DELAY = 350
 
 if len(sys.argv) < 3:
 	print("Usage: python main.py <participant_id> <trial_number> [<seed>]")
@@ -26,7 +26,7 @@ if len(sys.argv) == 4:
 
 with open('data.csv', 'a', newline='') as csvfile:
 	writer = csv.writer(csvfile)
-	writer.writerow(['Participant ID', 'Trial #', 'Avg Time (s)', 'Correctness Rate', 'Num of Keys In Hotkey Combination'])
+	writer.writerow(['Participant ID', 'Trial #', 'Avg Time (s)', 'Correctness Rate', 'Num of Keys In Hotkey Combination', 'Combination Correctness'])
 
 	correct_responses = 0
 	total_time = 0
@@ -105,10 +105,11 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 		num_keys = len(target_keys)
 		
-		correct_count = 1 if set(pressed) == set(target_keys) else 0
+		is_combination_correct = 1 if set(pressed) == set(target_keys) else 0
+		correct_count = is_combination_correct
 		correctness_rate = correct_count
 
-		print(f"Correctness: {'Correct' if correct_count == 1 else 'Incorrect'}")
+		print(f"Correctness: {'Correct' if is_combination_correct else 'Incorrect'}")
 		print(f"Response time: {response_time:.2f} seconds")
 
 		key_stats[num_keys]['correct'] += correctness_rate
@@ -118,6 +119,15 @@ with open('data.csv', 'a', newline='') as csvfile:
 		correct_responses += correct_count
 		total_time += response_time
 		trials_completed += 1
+
+		writer.writerow([
+			participant_id, 
+			trial_number, 
+			response_time, 
+			correctness_rate, 
+			num_keys, 
+			is_combination_correct
+		])
 
 		if trials_completed >= NUM_TRIALS:
 			report_results()
