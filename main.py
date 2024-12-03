@@ -7,7 +7,7 @@ import time
 NUM_TRIALS = 20
 MAX_KEY_COMBO = 4
 
-# Buffer time between trials in milliseconds
+# Buffer time between key entries in milliseconds
 KEY_RESET_DELAY = 350
 
 if len(sys.argv) < 3:
@@ -17,7 +17,7 @@ if len(sys.argv) < 3:
 	# for our experiment we will keep the seed the same for every participant, this was a later change
 
 participant_id = sys.argv[1]
-trial_number = sys.argv[2] # not sure if we will use this but the behavoir is here
+trial_number = sys.argv[2] # not sure if we will use this but the behavoir is here if we want it
 
 seed = None
 if len(sys.argv) == 4:
