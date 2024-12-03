@@ -5,7 +5,7 @@ import random
 import time
 
 NUM_TRIALS = 20
-MAX_KEY_COMBO = 4
+MAX_KEY_COMBO = 5
 
 # Buffer time between key entries in milliseconds
 KEY_RESET_DELAY = 350
@@ -80,25 +80,15 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 	def on_key_press(event):
 		normalized_key = normalize_key(event.keysym)
-		if normalized_key == 'Shift':
-			pressed_keys.add('Shift')
-		else:
-			if 'Shift' in pressed_keys:
-				normalized_key = normalized_key.lower()
+		if normalized_key not in pressed_keys:
 			pressed_keys.add(normalized_key)
 
-		# testing shit
-		# print(f"Keys pressed by user: {pressed_keys}")
-		# print(f"Keys expected by program: {set(target_keys)}")
+		print(f"Keys pressed by user: {pressed_keys}")
+		print(f"Keys expected by program: {set(target_keys)}")
 
-		if len(pressed_keys) == len(target_keys):
+		if len(pressed_keys) == len(target_keys):  # Only check correctness when all keys are pressed
 			response_time = time.time() - start_time
 			log_response(pressed_keys, response_time)
-
-	def on_key_release(event):
-		normalized_key = normalize_key(event.keysym)
-		pressed_keys.discard(normalized_key)
-
 
 	def log_response(pressed, response_time):
 		global correct_responses, total_time, trials_completed
@@ -155,7 +145,7 @@ with open('data.csv', 'a', newline='') as csvfile:
 				writer.writerow([participant_id, trial_number, avg_time, accuracy, num_keys])
 
 		prompt_label.config(text=f"Experiment complete.")
-		root.after(3000, root.destroy)
+		root.after(2000, root.destroy)
 
 	root = tk.Tk()
 	root.title("Reaction Time Experiment")
@@ -168,7 +158,6 @@ with open('data.csv', 'a', newline='') as csvfile:
 	prompt_label.pack()
 
 	root.bind('<KeyPress>', on_key_press)
-	root.bind('<KeyRelease>', on_key_release)
 	root.bind('<Escape>', lambda e: root.destroy())
 
 	root.mainloop()
