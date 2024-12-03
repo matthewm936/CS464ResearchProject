@@ -4,106 +4,98 @@ import tkinter as tk
 import random
 import time
 
-# Global variables
-NUM_TRIALS = 50
-MAX_KEY_COMBO = 8  # Maximum number of keys in a combination
-KEY_RESET_DELAY = 400  # Buffer time between trials in milliseconds
+NUM_TRIALS = 40
+MAX_KEY_COMBO = 8
 
-# Read in arguments from the command line
+# Buffer time between trials in milliseconds
+KEY_RESET_DELAY = 400
+
 if len(sys.argv) < 3:
-	print("Usage: python script.py <participant_id> <trial_number> [<seed>]")
+	print("Usage: python main.py <participant_id> <trial_number> [<seed>]")
 	sys.exit(1)
 
-participant_id = sys.argv[1]
-trial_number = sys.argv[2]
+	# for our experiment we will keep the seed the same for every participant, this was a later change
 
-# Optional seed for reproducibility
+participant_id = sys.argv[1]
+trial_number = sys.argv[2] # not sure if we will use this but the behavoir is here
+
 seed = None
 if len(sys.argv) == 4:
 	seed = int(sys.argv[3])
 	random.seed(seed)
 
-# Open CSV file in append mode
 with open('data.csv', 'a', newline='') as csvfile:
 	writer = csv.writer(csvfile)
 	writer.writerow(['Participant ID', 'Trial #', 'Avg Time (s)', 'Correctness Rate', 'Key Count'])
 
-	# Track overall stats
 	correct_responses = 0
 	total_time = 0
 	trials_completed = 0
 
-	# Track stats for individual key counts
 	key_stats = {i: {'correct': 0, 'total_time': 0, 'trials': 0} for i in range(1, MAX_KEY_COMBO + 1)}
 
-	pressed_keys = set()  # Track keys currently pressed
+	pressed_keys = set() # allows for us to check if the set, ie the order of keys pressed doesnt matter
+
 	target_keys = []
 
 	def start_experiment():
-		instructions = "Press the shown keys as quickly and accurately as possible"
+		instructions = "Press the shown keys as quickly and accurately as possible.  The order of hotkeys pressed does not matter"
 		start_button.config(text=instructions)
-		start_button.pack_forget()  # Hide the start button
-		prompt_next_key(1)  # Start with single-key prompts
+		start_button.pack_forget()
+		prompt_next_key(1)
 
 	def prompt_next_key(num_keys):
 		global target_keys, start_time, pressed_keys
 
-		# Clear pressed keys and target keys for the new trial
 		pressed_keys.clear()
 		target_keys.clear()
 
-		# Generate target keys based on the current level
 		if num_keys == 1:
 			target_keys.append(random.choice("abcdefghijklmnopqrstuvwxyz"))
 		else:
-			# Add modifier keys and ensure unique keys for 2+ key prompts
+			# this should allow for hotkey like combinations, instead of just purely random
 			modifiers = ['Shift', 'Control']
-			selected_keys = set(random.sample(modifiers, 1))  # Start with one modifier key
-			selected_keys.update(random.sample("abcdefghijklmnopqrstuvwxyz", num_keys - 1))  # Add unique keys
-			
+			selected_keys = set(random.sample(modifiers, min(1, num_keys)))
+			selected_keys.update(random.sample("abcdefghijklmnopqrstuvwxyz", num_keys - len(selected_keys)))
 			target_keys = list(selected_keys)
 
-		start_time = time.time()  # Start timer
+		start_time = time.time()
 
-		# Display target keys prompt
 		keys_text = ' + '.join(target_keys)
 		prompt_label.config(text=f"Press the keys: {keys_text}")
 		prompt_label.pack()
 
 	def normalize_key(key):
-		"""Normalize keys to handle left/right variants and shift behavior."""
+		# left versus right ctrl and shift doesnt change things
+		# also hitting shift alphabet character wont make it upper
 		if key in ['Shift_L', 'Shift_R']:
 			return 'Shift'
 		elif key in ['Control_L', 'Control_R']:
 			return 'Control'
 		elif key in ['Alt_L', 'Alt_R']:
 			return 'Alt'
-		elif len(key) == 1 and key.isalpha():  # For letters, normalize to lowercase
+		elif len(key) == 1 and key.isalpha():
 			return key.lower()
 		return key
 
 	def on_key_press(event):
-		# Track the currently pressed keys
 		normalized_key = normalize_key(event.keysym)
 		if normalized_key == 'Shift':
-			pressed_keys.add('Shift')  # Explicitly add Shift
+			pressed_keys.add('Shift')
 		else:
-			# Normalize letters to lowercase if Shift is pressed
 			if 'Shift' in pressed_keys:
 				normalized_key = normalized_key.lower()
 			pressed_keys.add(normalized_key)
 
-		# Print the keys pressed and the expected keys
-		print(f"Keys pressed by user: {pressed_keys}")
-		print(f"Keys expected by program: {set(target_keys)}")
+		# testing shit
+		# print(f"Keys pressed by user: {pressed_keys}")
+		# print(f"Keys expected by program: {set(target_keys)}")
 
-		# Check if the number of pressed keys matches the target
 		if len(pressed_keys) == len(target_keys):
 			response_time = time.time() - start_time
 			log_response(pressed_keys, response_time)
 
 	def on_key_release(event):
-		# Remove released key from the set
 		normalized_key = normalize_key(event.keysym)
 		pressed_keys.discard(normalized_key)
 
@@ -113,40 +105,36 @@ with open('data.csv', 'a', newline='') as csvfile:
 
 		num_keys = len(target_keys)
 		
-		# Calculate correctness by ensuring both sets have the same keys (order doesn't matter)
 		correct_count = 1 if set(pressed) == set(target_keys) else 0
-		correctness_rate = correct_count  # 1 if all keys match, 0 otherwise
+		correctness_rate = correct_count
 
-		# Print result of comparison
 		print(f"Correctness: {'Correct' if correct_count == 1 else 'Incorrect'}")
 		print(f"Response time: {response_time:.2f} seconds")
 
-		# Update stats for the current key count
 		key_stats[num_keys]['correct'] += correctness_rate
 		key_stats[num_keys]['total_time'] += response_time
 		key_stats[num_keys]['trials'] += 1
 
-		correct_responses += correct_count  # Total correct across all trials
+		correct_responses += correct_count
 		total_time += response_time
 		trials_completed += 1
 
-		# Progress to the next trial or end the experiment
 		if trials_completed >= NUM_TRIALS:
 			report_results()
 		else:
 			prompt_label.after(KEY_RESET_DELAY, reset_after_trial)
 
 	def reset_after_trial():
-		# Reset for the next prompt
-		next_key_count = min(1 + trials_completed // (NUM_TRIALS // 3), MAX_KEY_COMBO)
+		next_key_count = min(1 + trials_completed // (NUM_TRIALS // MAX_KEY_COMBO), MAX_KEY_COMBO)
 		prompt_next_key(next_key_count)
 
 	def report_results():
-		# Report overall results
 		avg_time_overall = total_time / NUM_TRIALS
 
 		# counts any miss as a combo miss
-		combo_accuracy = correct_responses / (trials_completed)  # Overall accuracy based on total key presses
+		combo_accuracy = correct_responses / (trials_completed)
+		
+		 # Overall accuracy based on total key presses
 		writer.writerow([participant_id, trial_number, avg_time_overall, combo_accuracy, 'Overall'])
 
 		# Report individual key count results
@@ -156,26 +144,21 @@ with open('data.csv', 'a', newline='') as csvfile:
 				accuracy = key_stats[num_keys]['correct'] / key_stats[num_keys]['trials']  # Average correctness for key count
 				writer.writerow([participant_id, trial_number, avg_time, accuracy, num_keys])
 
-		prompt_label.config(text="Experiment complete. Thank you!")
-		root.after(2000, root.destroy)  # Close window after 2 seconds
+		prompt_label.config(text=f"Experiment complete.")
+		root.after(3000, root.destroy)
 
-	# Set up the GUI window
 	root = tk.Tk()
 	root.title("Reaction Time Experiment")
-	root.attributes('-fullscreen', True)  # Make the window fullscreen
+	root.attributes('-fullscreen', True)
 
-	# Add start button with instructions
 	start_button = tk.Button(root, text="Start", command=start_experiment, font=("Helvetica", 16), width=15, height=3)
 	start_button.pack(pady=20)
 
-	# Label to display key prompts
 	prompt_label = tk.Label(root, font=("Helvetica", 24))
 	prompt_label.pack()
 
-	# Bind key press and release events, and exit on ESC
 	root.bind('<KeyPress>', on_key_press)
 	root.bind('<KeyRelease>', on_key_release)
-	root.bind('<Escape>', lambda e: root.destroy())  # Allow exit with ESC
+	root.bind('<Escape>', lambda e: root.destroy())
 
-	# Run the GUI
 	root.mainloop()
